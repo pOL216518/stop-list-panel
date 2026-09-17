@@ -13,9 +13,11 @@ export default async function Page({ searchParams }: PageProps) {
 
   return (
     <main className="min-h-screen bg-[#F6F3EE] p-8">
-      <h1 className="mb-6 text-2xl font-semibold text-[#171512]">Стоп-лист кухни</h1>
-      <Filters filters={filters} />
-      <StopListTable filters={filters} />
+      <div className="mx-auto max-w-[1280px]">
+        <h1 className="mb-6 text-2xl font-semibold text-[#171512]">Стоп-лист кухни</h1>
+        <Filters filters={filters} />
+        <StopListTable filters={filters} />
+      </div>
     </main>
   );
 }

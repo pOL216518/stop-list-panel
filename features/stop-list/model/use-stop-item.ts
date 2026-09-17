@@ -35,6 +35,7 @@ export function useStopItem() {
   const listKey = menuKeys.list();
 
   return useMutation({
+    mutationKey: ['stop-item'],
     mutationFn: (vars: { id: string; payload: StopItemPayload }) => postStopMenuItem(vars.id, vars.payload),
 
     onMutate: async ({ id, payload }) => {
@@ -71,6 +72,7 @@ export function useResumeItem() {
   const listKey = menuKeys.list();
 
   return useMutation({
+    mutationKey: ['resume-item'],
     mutationFn: (id: string) => postResumeMenuItem(id),
 
     onMutate: async (id) => {

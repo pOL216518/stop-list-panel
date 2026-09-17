@@ -129,7 +129,8 @@ export function StopReasonPanel() {
                 step={900}
                 min={toDateTimeLocalValue(roundUpToStep(new Date()).toISOString())}
                 max={toDateTimeLocalValue(new Date(Date.now() + MAX_AHEAD_MS).toISOString())}
-                className="mt-2 w-full rounded-md border border-[#D8D2C7] px-3 py-2 text-sm text-[#171512] focus:border-[#C6462F] focus:outline-none focus:ring-1 focus:ring-[#C6462F]"
+                className={`mt-2 w-full rounded-md border px-3 py-2 text-sm text-[#171512] focus:outline-none focus:ring-1 focus:ring-[#C6462F] ${
+                formError ? 'border-[#C6462F]' : 'border-[#D8D2C7] focus:border-[#C6462F]'}`}
               />
             )}
           </div>
@@ -141,7 +142,7 @@ export function StopReasonPanel() {
               Отмена
             </Button>
             <Button type="submit" isLoading={stopMutation.isPending}>
-              Сохранить
+              {stopMutation.isPending ? 'Сохранение…' : 'Сохранить'}
             </Button>
           </div>
         </form>

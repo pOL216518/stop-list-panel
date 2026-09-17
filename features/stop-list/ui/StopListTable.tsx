@@ -5,7 +5,7 @@ import { Badge } from '@/shared/ui/Badge';
 import { MenuFilters } from '../model/filters';
 import { Button } from '@/shared/ui/Button';
 import { matchesFilters } from '../model/filters';
-import { useMenuItems } from '../model/queries';
+import { useMenuItems, usePendingMenuItemIds } from '../model/queries';
 import { useResumeItem } from '../model/use-stop-item';
 import { StopReasonPanel } from './StopReasonPanel';
 import { useStopPanelStore } from '../model/stop-panel-store';
@@ -31,6 +31,7 @@ export function StopListTable({ filters }: StopListTableProps) {
   const { data, isPending, isError, error } = useMenuItems();
   const resumeMutation = useResumeItem();
   const openPanel = useStopPanelStore((state) => state.openPanel);
+  const pendingIds = usePendingMenuItemIds();
 
   const filteredItems = useMemo(() => {
     if (!data) return [];
@@ -84,6 +85,9 @@ export function StopListTable({ filters }: StopListTableProps) {
                 ) : (
                   <Badge tone="neutral">В продаже</Badge>
                 )}
+                {pendingIds.has(item.id) && (
+                  <span className="ml-2 text-xs italic text-[#6D665D]">сохраняется…</span>
+                )}
               </td>
               <td className="px-4 py-3 text-right">
                 {item.status.kind === 'stopped' ? (
@@ -102,7 +106,7 @@ export function StopListTable({ filters }: StopListTableProps) {
                     onClick={() => resumeMutation.mutate(item.id)}
                     title={item.stock === 0 ? 'Нет остатка — сначала пополните позицию' : undefined}
                   >
-                    Вернуть в продажу
+                    {resumeMutation.isPending && resumeMutation.variables === item.id ? 'Сохранение…' : 'Вернуть в продажу'}
                   </Button>
                   </div>
                 ) : (

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutationState,useQuery } from '@tanstack/react-query';
 import type { MenuItem } from '@/types/menu';
 
 export const menuKeys = {
@@ -19,4 +19,18 @@ export function useMenuItems() {
     queryKey: menuKeys.list(),
     queryFn: fetchMenuItems,
   });
+}
+
+export function usePendingMenuItemIds(): Set<string> {
+  const pendingStopIds = useMutationState({
+    filters: { mutationKey: ['stop-item'], status: 'pending' },
+    select: (mutation) => (mutation.state.variables as { id: string } | undefined)?.id,
+  });
+
+  const pendingResumeIds = useMutationState({
+    filters: { mutationKey: ['resume-item'], status: 'pending' },
+    select: (mutation) => mutation.state.variables as string | undefined,
+  });
+
+  return new Set([...pendingStopIds, ...pendingResumeIds].filter((id): id is string => Boolean(id)));
 }
