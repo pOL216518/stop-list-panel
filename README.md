@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Стоп-лист кухни
 
-## Getting Started
+Панель для менеджера зала: видно меню текущей смены, можно фильтровать по цеху и статусу, ставить позиции в стоп-лист или возвращать их в продажу. Бэкенд — мок на route handler'ах Next.js, данные живут в памяти процесса.
 
-First, run the development server:
+## Стек
+
+- Next.js (App Router, TypeScript)
+- TanStack Query — серверные данные, кэш, мутации
+- Zustand — клиентское UI-состояние (открытая панель, тосты)
+- Tailwind CSS
+- Zod — валидация, одна схема на клиент и route handler
+
+## Как запустить локально
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Открыть `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Архитектура и разделение слоёв
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `app/` — только страницы, layout и провайдеры. `page.tsx` — единственный серверный компонент, читает `searchParams`, парсит фильтры и передаёт их клиентским компонентам как props.
+- `app/api/**` — мок-бэкенд на route handler'ах, данные — в памяти процесса (`server/menu-store.ts`).
+- `features/stop-list/model/` — вся работа с данными: ключи кэша и запросы (`queries.ts`), мутации с оптимистикой и роллбэком (`use-stop-item.ts`), чтение/запись фильтров в URL (`filters.ts`), Zod-схема и правило валидации срока, переиспользуемые на клиенте и сервере (`stop-schema.ts`, `validate-until.ts`), стор открытой панели (`stop-panel-store.ts`).
+- `features/stop-list/ui/` — презентационные компоненты (`StopListTable`, `Filters`, `StopReasonPanel`). Они не делают запросы напрямую, а вызывают хуки из `model/`.
+- `shared/ui/` — переиспользуемый UI-кит (`Button`, `Badge`, `Select`, `Toast`) и Zustand-стор тостов.
+- `types/menu.ts` — доменные типы без зависимостей от React или Zod.
 
-## Learn More
+Граница сервер/клиент: единственный серверный компонент — `app/page.tsx`. Всё интерактивное (таблица, фильтры, панель) — клиентские компоненты, потому что работают с React Query, Zustand и обработчиками событий.
 
-To learn more about Next.js, take a look at the following resources:
+## Ключевые архитектурные решения
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Фильтрация сделана на клиенте поверх одного закэшированного списка, а не отдельными query-параметрами к API: данных мало, пагинации нет, а единственный источник правды в кэше упрощает оптимистичные обновления — не нужно синхронизировать несколько записей кэша под разные комбинации фильтров.
+- Клиентское UI-состояние (открытая панель и выбранная позиция, тосты) — в Zustand; серверные данные — только в React Query, без дублирования.
+- `stopItemSchema` и `validateUntil` переиспользуются в форме на клиенте и в route handler'е — одна и та же проверка, а не две похожие в разных местах.
+- Роллбэк мутаций — через `onMutate`/`onError` со снапшотом предыдущего списка: при ошибке меняется только затронутая строка, весь список не перезагружается и не мигает.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Особенность serverless
 
-## Deploy on Vercel
+На Vercel route handler'ы выполняются в serverless-функциях без гарантии переиспользования процесса между запросами — in-memory-хранилище (`server/menu-store.ts`) может сбрасываться к сиду между запросами, особенно в проде. Это ожидаемое поведение мок-бэкенда: полноценная персистентность потребовала бы реальной БД, что вне рамок задания.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Что доделал бы при наличии времени
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Юнит-тест на оптимистичное обновление и роллбэк (`useStopItem` / `useResumeItem`)
+- Доступность - закрытие панели по `Esc`, aria-атрибуты и фокус-трап в модалке
+- Анимацию появления панели и смены статуса строки (Framer Motion)
+- Использовал бы React Hook Form вместо ручного `useState` в форме, если она вырастет полями
