@@ -6,6 +6,7 @@ import { useMenuItems } from '../model/queries';
 import { useStopItem } from '../model/use-stop-item';
 import { useStopPanelStore } from '../model/stop-panel-store';
 import { stopItemSchema, stopReasonValues } from '../model/stop-schema';
+import { MAX_AHEAD_MS, roundUpToStep } from '../model/validate-until';
 import type { StopReason } from '@/types/menu';
 import { Button } from '@/shared/ui/Button';
 import { Select } from '@/shared/ui/Select';
@@ -70,7 +71,7 @@ export function StopReasonPanel() {
     const parsed = stopItemSchema.safeParse({ reason, until });
 
     if (!parsed.success) {
-      setFormError('Проверьте заполненные поля');
+      setFormError(parsed.error.issues[0]?.message ?? 'Проверьте заполненные поля');
       return;
     }
 
@@ -125,6 +126,9 @@ export function StopReasonPanel() {
                 type="datetime-local"
                 value={untilValue}
                 onChange={(event) => setUntilValue(event.target.value)}
+                step={900}
+                min={toDateTimeLocalValue(roundUpToStep(new Date()).toISOString())}
+                max={toDateTimeLocalValue(new Date(Date.now() + MAX_AHEAD_MS).toISOString())}
                 className="mt-2 w-full rounded-md border border-[#D8D2C7] px-3 py-2 text-sm text-[#171512] focus:border-[#C6462F] focus:outline-none focus:ring-1 focus:ring-[#C6462F]"
               />
             )}
