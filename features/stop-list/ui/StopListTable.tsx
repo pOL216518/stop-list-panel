@@ -6,6 +6,7 @@ import { MenuFilters } from '../model/filters';
 import { Button } from '@/shared/ui/Button';
 import { matchesFilters } from '../model/filters';
 import { useMenuItems } from '../model/queries';
+import { useResumeItem } from '../model/use-stop-item';
 
 const shopLabels: Record<string, string> = {
   kitchen: 'Кухня',
@@ -26,6 +27,7 @@ interface StopListTableProps {
 
 export function StopListTable({ filters }: StopListTableProps) {
   const { data, isPending, isError, error } = useMenuItems();
+  const resumeMutation = useResumeItem();
 
   const filteredItems = useMemo(() => {
     if (!data) return [];
@@ -83,7 +85,9 @@ export function StopListTable({ filters }: StopListTableProps) {
               {item.status.kind === 'stopped' ? (
                 <Button
                   variant="secondary"
-                  disabled={item.stock === 0}
+                  disabled={item.stock === 0 || (resumeMutation.isPending && resumeMutation.variables === item.id)}
+                  isLoading={resumeMutation.isPending && resumeMutation.variables === item.id}
+                  onClick={() => resumeMutation.mutate(item.id)}
                   title={item.stock === 0 ? 'Нет остатка — сначала пополните позицию' : undefined}
                 >
                   Вернуть в продажу
