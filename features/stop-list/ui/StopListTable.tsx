@@ -7,6 +7,8 @@ import { Button } from '@/shared/ui/Button';
 import { matchesFilters } from '../model/filters';
 import { useMenuItems } from '../model/queries';
 import { useResumeItem } from '../model/use-stop-item';
+import { StopReasonPanel } from './StopReasonPanel';
+import { useStopPanelStore } from '../model/stop-panel-store';
 
 const shopLabels: Record<string, string> = {
   kitchen: 'Кухня',
@@ -28,6 +30,7 @@ interface StopListTableProps {
 export function StopListTable({ filters }: StopListTableProps) {
   const { data, isPending, isError, error } = useMenuItems();
   const resumeMutation = useResumeItem();
+  const openPanel = useStopPanelStore((state) => state.openPanel);
 
   const filteredItems = useMemo(() => {
     if (!data) return [];
@@ -51,54 +54,66 @@ export function StopListTable({ filters }: StopListTableProps) {
   }
 
   return (
-    <table className="w-full border-collapse overflow-hidden rounded-lg bg-white text-sm shadow-sm">
-      <thead>
-        <tr className="border-b border-[#EFEBE3] text-left text-xs uppercase tracking-wide text-[#6D665D]">
-          <th className="px-4 py-3">Название</th>
-          <th className="px-4 py-3">Цех</th>
-          <th className="px-4 py-3">Остаток</th>
-          <th className="px-4 py-3">Статус</th>
-          <th className="px-4 py-3" />
-        </tr>
-      </thead>
-      <tbody>
-        {filteredItems.map((item) => (
-          <tr key={item.id}  className={`border-b border-[#F6F3EE] last:border-0 ${
-              item.status.kind === 'stopped' ? 'bg-[#F6F3EE]/60 text-[#6D665D]' : ''
-            }`}>
-            <td className="px-4 py-3 font-medium">{item.title}</td>
-            <td className="px-4 py-3"><Badge tone="muted">{shopLabels[item.shop]}</Badge></td>
-            <td className="px-4 py-3">{item.stock}</td>
-            <td className="px-4 py-3">
-              {item.status.kind === 'stopped' ? (
-                <Badge tone="accent">
-                  {reasonLabels[item.status.reason]}
-                  {item.status.until
-                    ? ` · до ${new Date(item.status.until).toLocaleTimeString()}`
-                    : ' · до конца смены'}
-                </Badge>
-              ) : (
-                <Badge tone="neutral">В продаже</Badge>
-              )}
-            </td>
-            <td className="px-4 py-3 text-right">
-              {item.status.kind === 'stopped' ? (
-                <Button
-                  variant="secondary"
-                  disabled={item.stock === 0 || (resumeMutation.isPending && resumeMutation.variables === item.id)}
-                  isLoading={resumeMutation.isPending && resumeMutation.variables === item.id}
-                  onClick={() => resumeMutation.mutate(item.id)}
-                  title={item.stock === 0 ? 'Нет остатка — сначала пополните позицию' : undefined}
-                >
-                  Вернуть в продажу
-                </Button>
-              ) : (
-                <Button variant="secondary">Поставить в стоп</Button>
-              )}
-            </td>
+    <>
+      <table className="w-full border-collapse overflow-hidden rounded-lg bg-white text-sm shadow-sm">
+        <thead>
+          <tr className="border-b border-[#EFEBE3] text-left text-xs uppercase tracking-wide text-[#6D665D]">
+            <th className="px-4 py-3">Название</th>
+            <th className="px-4 py-3">Цех</th>
+            <th className="px-4 py-3">Остаток</th>
+            <th className="px-4 py-3">Статус</th>
+            <th className="px-4 py-3" />
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {filteredItems.map((item) => (
+            <tr key={item.id}  className={`border-b border-[#F6F3EE] last:border-0 ${
+                item.status.kind === 'stopped' ? 'bg-[#F6F3EE]/60 text-[#6D665D]' : ''
+              }`}>
+              <td className="px-4 py-3 font-medium">{item.title}</td>
+              <td className="px-4 py-3"><Badge tone="muted">{shopLabels[item.shop]}</Badge></td>
+              <td className="px-4 py-3">{item.stock}</td>
+              <td className="px-4 py-3">
+                {item.status.kind === 'stopped' ? (
+                  <Badge tone="accent">
+                    {reasonLabels[item.status.reason]}
+                    {item.status.until
+                      ? ` · до ${new Date(item.status.until).toLocaleTimeString()}`
+                      : ' · до конца смены'}
+                  </Badge>
+                ) : (
+                  <Badge tone="neutral">В продаже</Badge>
+                )}
+              </td>
+              <td className="px-4 py-3 text-right">
+                {item.status.kind === 'stopped' ? (
+                  <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openPanel(item.id)}
+                    className="text-sm text-[#6D665D] underline-offset-2 hover:underline"
+                  >
+                    Изменить
+                  </button>
+                  <Button
+                    variant="secondary"
+                    disabled={item.stock === 0 || (resumeMutation.isPending && resumeMutation.variables === item.id)}
+                    isLoading={resumeMutation.isPending && resumeMutation.variables === item.id}
+                    onClick={() => resumeMutation.mutate(item.id)}
+                    title={item.stock === 0 ? 'Нет остатка — сначала пополните позицию' : undefined}
+                  >
+                    Вернуть в продажу
+                  </Button>
+                  </div>
+                ) : (
+                  <Button variant="secondary">Поставить в стоп</Button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <StopReasonPanel />
+    </>
   );
 }

@@ -1,24 +1,13 @@
 import { NextResponse } from 'next/server';
 import { delay, getMenuItem, stopMenuItem } from '@/server/menu-store';
-import type { StopItemPayload, StopReason } from '@/types/menu';
-
-const STOP_REASONS: StopReason[] = ['out_of_stock', 'equipment', 'quality', 'menu_change'];
-
-function isStopItemPayload(value: unknown): value is StopItemPayload {
-  if (typeof value !== 'object' || value === null) return false;
-  const payload = value as Record<string, unknown>;
-  return (
-    typeof payload.reason === 'string' &&
-    STOP_REASONS.includes(payload.reason as StopReason) &&
-    (payload.until === null || typeof payload.until === 'string')
-  );
-}
+import { stopItemSchema } from '@/features/stop-list/model/stop-schema';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await request.json().catch(() => null);
+  const parsed = stopItemSchema.safeParse(body);
 
-  if (!isStopItemPayload(body)) {
+  if (!parsed.success) {
     return NextResponse.json({ message: 'Некорректные данные для постановки в стоп-лист' }, { status: 400 });
   }
 
@@ -32,6 +21,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ message: 'Не удалось сохранить изменения, попробуйте ещё раз' }, { status: 500 });
   }
 
-  const updated = stopMenuItem(id, body);
+  const updated = stopMenuItem(id, parsed.data);
   return NextResponse.json(updated);
 }
