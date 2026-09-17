@@ -3,7 +3,7 @@ import type { MenuItem } from '@/types/menu';
 
 export const menuKeys = {
   all: ['menu-items'] as const,
-  list: (filtersKey: unknown) => ['menu-items', 'list', filtersKey] as const,
+  list: () => ['menu-items', 'list'] as const,
 };
 
 async function fetchMenuItems(): Promise<MenuItem[]> {
@@ -14,9 +14,9 @@ async function fetchMenuItems(): Promise<MenuItem[]> {
   return response.json();
 }
 
-export function useMenuItems(filtersKey: unknown) {
+export function useMenuItems() {
   return useQuery({
-    queryKey: menuKeys.list(filtersKey),
+    queryKey: menuKeys.list(),
     queryFn: fetchMenuItems,
   });
 }

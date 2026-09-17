@@ -1,8 +1,11 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Badge } from '@/shared/ui/Badge';
-import { useMenuItems } from '../model/queries';
+import { MenuFilters } from '../model/filters';
 import { Button } from '@/shared/ui/Button';
+import { matchesFilters } from '../model/filters';
+import { useMenuItems } from '../model/queries';
 
 const shopLabels: Record<string, string> = {
   kitchen: 'Кухня',
@@ -17,8 +20,17 @@ const reasonLabels: Record<string, string> = {
   menu_change: 'Снято из меню',
 };
 
-export function StopListTable() {
-  const { data, isPending, isError, error } = useMenuItems(null);
+interface StopListTableProps {
+  filters: MenuFilters;
+}
+
+export function StopListTable({ filters }: StopListTableProps) {
+  const { data, isPending, isError, error } = useMenuItems();
+
+  const filteredItems = useMemo(() => {
+    if (!data) return [];
+    return data.filter((item) => matchesFilters(item, filters));
+  }, [data, filters]);
 
   if (isPending) {
     return <p className="text-sm text-[#6D665D]">Загрузка меню…</p>;
@@ -30,6 +42,10 @@ export function StopListTable() {
 
   if (data.length === 0) {
     return <p className="text-sm text-[#6D665D]">Меню смены пусто.</p>;
+  }
+
+  if (filteredItems.length === 0) {
+    return <p className="text-sm text-[#6D665D]">Ничего не найдено по выбранным фильтрам.</p>;
   }
 
   return (
@@ -44,7 +60,7 @@ export function StopListTable() {
         </tr>
       </thead>
       <tbody>
-        {data.map((item) => (
+        {filteredItems.map((item) => (
           <tr key={item.id}  className={`border-b border-[#F6F3EE] last:border-0 ${
               item.status.kind === 'stopped' ? 'bg-[#F6F3EE]/60 text-[#6D665D]' : ''
             }`}>
